@@ -291,6 +291,7 @@
             font-size: 0.95rem;
             border-radius: 10px;
             cursor: pointer;
+            box-shadow: none;
         }
 
         .btn-primary-modal {
@@ -492,7 +493,6 @@
 <div class="modal-overlay" id="passwordModal">
     <div class="modal-box">
         <div class="modal-header">
-            <!-- ไอคอนกุญแจ SVG -->
             <svg class="modal-icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
             </svg>
@@ -514,7 +514,7 @@
 <script>
     let activeSectionName = "";
     let activeSectionId = "";
-    const CORRECT_PASSWORD = "123"; // กำหนดรหัสผ่านทดสอบที่นี่
+    const CORRECT_PASSWORD = "123"; // รหัสผ่านทดสอบตั้งไว้เป็น 123
 
     function calculateDiff(input) {
         const row = input.closest('tr');
@@ -544,7 +544,6 @@
         }
     }
 
-    // เมื่อกดปุ่มบันทึกของแต่ละส่วน ให้เปิด Modal รหัสผ่านขึ้นมาก่อน
     function requestSave(sectionName, sectionId) {
         activeSectionName = sectionName;
         activeSectionId = sectionId;
@@ -564,7 +563,6 @@
         }
     }
 
-    // ตรวจสอบรหัสผ่าน
     function verifyPassword() {
         const inputPassword = document.getElementById('authPassword').value;
 
@@ -575,45 +573,45 @@
             return;
         }
 
-        // ปิด Modal รหัสผ่าน
         closeModal();
 
-        // หลังจากใส่รหัสผ่านถูกต้อง ให้ถามชื่อผู้ให้ข้อมูลต่อทันที
-        const reporterName = prompt(`รหัสผ่านถูกต้อง!\nกรุณาระบุชื่อ-นามสกุล ผู้บันทึกข้อมูล "${activeSectionName}":`);
-        
-        if (!reporterName || reporterName.trim() === "") {
-            alert("ยกเลิกการบันทึก เนื่องจากไม่ได้ระบุชื่อผู้ให้ข้อมูล");
-            return;
-        }
+        // หน่วงเวลาเล็กน้อยเพื่อให้ Modal ปิดสนิทก่อนเด้ง Prompt ถามชื่อ
+        setTimeout(() => {
+            const reporterName = prompt(`รหัสผ่านถูกต้อง!\nกรุณาระบุชื่อ-นามสกุล ผู้บันทึกข้อมูล "${activeSectionName}":`);
+            
+            if (!reporterName || reporterName.trim() === "") {
+                alert("ยกเลิกการบันทึก เนื่องจากไม่ได้ระบุชื่อผู้ให้ข้อมูล");
+                return;
+            }
 
-        const currentDate = "15 ก.ย. 2026";
-        const section = document.getElementById(activeSectionId);
-        const rows = section.querySelectorAll('tbody tr');
-        let dataToSave = [];
+            const currentDate = "15 ก.ย. 2026";
+            const section = document.getElementById(activeSectionId);
+            const rows = section.querySelectorAll('tbody tr');
+            let dataToSave = [];
 
-        rows.forEach(row => {
-            const itemName = row.cells[0].textContent.trim();
-            const unit = row.cells[1].textContent.trim();
-            const oldStock = row.querySelector('.old-stock').textContent.trim();
-            const inputVal = row.querySelector('input[type="number"]').value;
-            const currentStock = inputVal !== "" ? inputVal : oldStock;
+            rows.forEach(row => {
+                const itemName = row.cells[0].textContent.trim();
+                const unit = row.cells[1].textContent.trim();
+                const oldStock = row.querySelector('.old-stock').textContent.trim();
+                const inputVal = row.querySelector('input[type="number"]').value;
+                const currentStock = inputVal !== "" ? inputVal : oldStock;
 
-            dataToSave.push({
-                item: itemName,
-                unit: unit,
-                currentStock: currentStock
+                dataToSave.push({
+                    item: itemName,
+                    unit: unit,
+                    currentStock: currentStock
+                });
             });
-        });
 
-        // จำลองข้อมูลที่จะส่งไป Google Sheet
-        console.log("Data to Google Sheet:", {
-            date: currentDate,
-            reporter: reporterName.trim(),
-            category: activeSectionName,
-            items: dataToSave
-        });
+            console.log("Data to Google Sheet:", {
+                date: currentDate,
+                reporter: reporterName.trim(),
+                category: activeSectionName,
+                items: dataToSave
+            });
 
-        alert(`บันทึกข้อมูลส่วน "${activeSectionName}" สำเร็จ!\nผู้บันทึก: ${reporterName.trim()}\nวันที่: ${currentDate}`);
+            alert(`บันทึกข้อมูลส่วน "${activeSectionName}" สำเร็จ!\nผู้บันทึก: ${reporterName.trim()}\nวันที่: ${currentDate}`);
+        }, 200);
     }
 </script>
 

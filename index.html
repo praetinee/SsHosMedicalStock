@@ -118,12 +118,22 @@
             letter-spacing: -0.01em;
         }
 
-        .badge-dept {
+        /* ป้ายแยกสีผู้รับผิดชอบ */
+        .badge-supply {
             font-size: 0.75rem;
             padding: 5px 12px;
             border-radius: 20px;
-            background-color: #f1f5f9;
-            color: var(--text-muted);
+            background-color: #e0f2fe; /* ฟ้าอ่อน */
+            color: #0369a1;         /* ฟ้าเข้ม */
+            font-weight: 500;
+        }
+
+        .badge-drug {
+            font-size: 0.75rem;
+            padding: 5px 12px;
+            border-radius: 20px;
+            background-color: #dcfce7; /* เขียวอ่อน */
+            color: #15803d;         /* เขียวเข้ม */
             font-weight: 500;
         }
 
@@ -356,7 +366,7 @@
     <div class="card" id="section-medical-supply">
         <h2>
             <span>รายการพัสดุทางการแพทย์</span>
-            <span class="badge-dept">ผู้รับผิดชอบ: งานพัสดุ</span>
+            <span class="badge-supply">ผู้รับผิดชอบ: งานพัสดุ</span>
         </h2>
         <div class="table-responsive">
             <table>
@@ -417,7 +427,7 @@
     <div class="card" id="section-drug-supply">
         <h2>
             <span>ยาคงคลัง</span>
-            <span class="badge-dept">ผู้รับผิดชอบ: งานเภสัชกรรม</span>
+            <span class="badge-drug">ผู้รับผิดชอบ: งานเภสัชกรรม</span>
         </h2>
         <div class="table-responsive">
             <table>
@@ -526,7 +536,7 @@
             </svg>
             <h3 class="modal-title">ยืนยันตัวตนเข้าสู่ระบบ</h3>
         </div>
-        <p class="modal-desc">กรุณาใส่รหัสผ่านเพื่อเข้าสู่ระบบบริหารจัดการ</p>
+        <p class="modal-desc">กรุณาใส่รหัสผ่านเพื่อบันทึกข้อมูล</p>
         
         <div class="modal-input">
             <input type="password" id="authPassword" placeholder="รหัสผ่าน..." onkeypress="handlePasswordKeypress(event)">
@@ -607,7 +617,7 @@
 
         closeModal();
 
-        // บันทึกสำเร็จทันทีโดยไม่ถามชื่อและไม่รีเฟรชหน้า
+        // บันทึกสำเร็จทันทีโดยไม่รีเฟรชหน้า
         const currentDate = "15 ก.ย. 2026";
         const section = document.getElementById(activeSectionId);
         const rows = section.querySelectorAll('tbody tr');

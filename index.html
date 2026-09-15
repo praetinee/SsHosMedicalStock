@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ระบบบันทึกเวชภัณฑ์และยาคงคลัง</title>
+    <!-- นำเข้า Google Fonts (Prompt และ Plus Jakarta Sans) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700&family=Prompt:wght@300;400;500;600&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --primary-color: #0ea5e9;
+            --primary-hover: #0284c7;
+            --success-color: #16a34a;
+            --success-hover: #15803d;
+            --bg-color: #f8fafc;
+            --card-bg: #ffffff;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --border-color: #e2e8f0;
+            --danger-color: #dc2626;
+        }
+
+        body {
+            font-family: 'Prompt', 'Plus Jakarta Sans', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            margin: 0;
+            padding: 30px 20px;
+            font-weight: 400;
+        }
+
+        .container {
+            max-width: 1050px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 35px;
+        }
+
+        header h1 {
+            color: var(--text-main);
+            font-family: 'Prompt', sans-serif;
+            margin-bottom: 8px;
+            font-size: 1.8rem;
+            font-weight: 600;
+            letter-spacing: -0.02em;
+        }
+
+        header p {
+            color: var(--text-muted);
+            margin: 0;
+            font-size: 0.95rem;
+            font-weight: 300;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border-radius: 16px;
+            box-shadow: 0 4px 6px -1px rgba(15, 23, 42, 0.03), 0 2px 4px -2px rgba(15, 23, 42, 0.03);
+            border: 1px solid var(--border-color);
+            margin-bottom: 25px;
+            padding: 28px;
+        }
+
+        h2 {
+            font-size: 1.15rem;
+            color: var(--text-main);
+            font-family: 'Prompt', sans-serif;
+            font-weight: 600;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 14px;
+            margin-top: 0;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            letter-spacing: -0.01em;
+        }
+
+        .badge-dept {
+            font-size: 0.75rem;
+            padding: 5px 12px;
+            border-radius: 20px;
+            background-color: #f1f5f9;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        .table-responsive {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+        }
+
+        th, td {
+            padding: 14px 16px;
+            border-bottom: 1px solid var(--border-color);
+            font-size: 0.92rem;
+            vertical-align: middle;
+        }
+
+        th {
+            background-color: #f8fafc;
+            color: var(--text-muted);
+            font-weight: 500;
+            font-size: 0.85rem;
+            letter-spacing: 0.02em;
+            text-transform: uppercase;
+        }
+
+        td.unit {
+            color: var(--text-muted);
+            white-space: nowrap;
+            font-weight: 300;
+        }
+
+        td.old-stock {
+            font-weight: 500;
+            color: var(--text-main);
+            text-align: center;
+            white-space: nowrap;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+        }
+
+        td.input-col {
+            width: 180px;
+        }
+
+        input[type="number"] {
+            width: 100%;
+            padding: 9px 14px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 0.95rem;
+            font-family: 'Plus Jakarta Sans', 'Prompt', sans-serif;
+            font-weight: 500;
+            box-sizing: border-box;
+            background-color: #fcfcfc;
+            transition: all 0.2s ease;
+        }
+
+        input[type="number"]:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            background-color: #ffffff;
+            box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.12);
+        }
+
+        .diff-badge {
+            display: inline-block;
+            margin-left: 8px;
+            font-size: 0.82rem;
+            font-weight: 600;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            white-space: nowrap;
+        }
+
+        .diff-up {
+            color: var(--success-color);
+        }
+
+        .diff-down {
+            color: var(--danger-color);
+        }
+
+        .diff-same {
+            color: var(--text-muted);
+        }
+
+        .section-action {
+            text-align: right;
+            margin-top: 24px;
+        }
+
+        button {
+            background-color: var(--text-main);
+            color: white;
+            border: none;
+            padding: 10px 24px;
+            font-size: 0.9rem;
+            font-family: 'Prompt', sans-serif;
+            font-weight: 500;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 2px 4px rgba(15, 23, 42, 0.05);
+        }
+
+        button:hover {
+            background-color: #334155;
+            transform: translateY(-1px);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        .btn-success {
+            background-color: var(--success-color);
+        }
+        .btn-success:hover {
+            background-color: var(--success-hover);
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1>ระบบบันทึกเวชภัณฑ์และยาคงคลัง</h1>
+        <p>แยกบันทึกข้อมูลและตรวจสอบยอดคงเหลือประจำวัน</p>
+    </header>
+
+    <!-- ส่วนที่ 1: รายการพัสดุทางการแพทย์ -->
+    <div class="card" id="section-medical-supply">
+        <h2>
+            <span>รายการพัสดุทางการแพทย์</span>
+            <span class="badge-dept">ผู้รับผิดชอบ: งานพัสดุ</span>
+        </h2>
+        <div class="table-responsive">
+            <table>
+                <thead>
+                    <tr>
+                        <th>รายการ</th>
+                        <th>หน่วย</th>
+                        <th style="text-align: center;">คงคลังเดิม (14 ก.ย. 2026)</th>
+                        <th style="text-align: right;">คงคลังปัจจุบัน / ส่วนต่าง</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>High Flow Nasal Cannula (HFNC)</td>
+                        <td class="unit">เครื่อง</td>
+                        <td class="old-stock" data-old="12">12</td>
+                        <td class="input-col"><input type="number" min="0" placeholder="0" oninput="calculateDiff(this)"></td>
+                    </tr>
+                    <tr>
+                        <td>ชุดทำแผล</td>
+                        <td class="unit">ชุด</td>
+                        <td class="old-stock" data-old="45">45</td>
+                        <td class="input-col"><input type="number" min="0" placeholder="0" oninput="calculateDiff(this)"></td>
+                    </tr>
+                    <tr>
+                        <td>หน้ากาก N95</td>
+                        <td class="unit">ชิ้น</td>
+                        <td class="old-stock" data-old="150">150</td>
+                        <td class="input-col"><input type="number" min="0" placeholder="0" oninput="calculateDiff(this)"></td>
+                    </tr>
+                    <tr>
+                        <td>หน้ากากอนามัยทางการแพทย์ (Surgical Mask) - ผู้ใหญ่</td>
+                        <td class="unit">ชิ้น</td>
+                        <td class="old-stock" data-old="500">500</td>
+                        <td class="input-col"><input type="number" min="0" placeholder="0" oninput="calculateDiff(this)"></td>
+                    </tr>
+                    <tr>
+                        <td>หน้ากากอนามัยทางการแพทย์ (Surgical Mask) - เด็ก</td>
+                        <td class="unit">ชิ้น</td>
+                        <td class="old-stock" data-old="200">200</td>
+                        <td class="input-col"><input type="number" min="0" placeholder="0" oninput="calculateDiff(this)"></td>
+                    </tr>
+                    <tr>
+                        <td>เครื่องช่วยหายใจ</td>
+                        <td class="unit">เครื่อง</td>
+                        <td class="old-stock" data-old="5">5</td>
+                        <td class="input-col"><input type="number" min="0" placeholder="0" oninput="calculateDiff(this)"></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        <div class="section-action">
+            <button onclick="handleSave('พัสดุทางการแพทย์', 'section-medical-supply')">บันทึกยอดพัสดุฯ</button>
+        </div>
+    </div>
+
+    <!-- ส่วนที่ 2: ยาคงคลัง -->
+    <div class="card" id="section-drug-supply">
+        <h2>
+            <span>ยาคงคลัง</span>
+            <span class="badge-dept">ผู้รับผิดชอบ: งานเภสัชกรรม</span>
+        </h2>
+        <div class="table-responsive">
+            <table>
+                <thead>
+                    <tr>
+                        <th>รายการ</th>
+                        <th>หน่วย</th>
+                        <th style="text-align: center;">คงคลังเดิม (14 ก.ย. 2026)</th>
+                        <th style="text-align: right;">คงคลังปัจจุบัน / ส่วนต่าง</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Antazoline + Tetrahydrozoline (0.5 mg + 0.4 mg/ml) Eye Drops</td>
+                        <td class="unit">ขวด</td>
+                        <td class="old-stock" data-old="25">25</td>
+                        <td class="input-col"><input type="number" min="0" placeholder="0" oninput="calculateDiff(this)"></td>
+                    </tr>
+                    <tr>
+                        <td>Budesonide (200 mcg/dose) Metered Dose Inhaler</td>
+                        <td class="unit">กระป๋อง</td>
+                        <td class="old-stock" data-old="10">10</td>
+                        <td class="input-col"><input type="number" min="0" placeholder="0" oninput="calculateDiff(this)"></td>
+                    </tr>
+                    <tr>
+                        <td>Cetirizine 5 mg Film Coated Tablet</td>
+                        <td class="unit">เม็ด</td>
+                        <td class="old-stock" data-old="300">300</td>
+                        <td class="input-col"><input type="number" min="0" placeholder="0" oninput="calculateDiff(this)"></td>
+                    </tr>
+                    <tr>
+                        <td>Chlorpheniramine Maleate 4 mg Oral Tablet</td>
+                        <td class="unit">เม็ด</td>
+                        <td class="old-stock" data-old="450">450</td>
+                        <td class="input-col"><input type="number" min="0" placeholder="0" oninput="calculateDiff(this)"></td>
+                    </tr>
+                    <tr>
+                        <td>Loratadine 10 mg Oral Tablet</td>
+                        <td class="unit">เม็ด</td>
+                        <td class="old-stock" data-old="180">180</td>
+                        <td class="input-col"><input type="number" min="0" placeholder="0" oninput="calculateDiff(this)"></td>
+                    </tr>
+                    <tr>
+                        <td>Neomycin Sulfate + Polymixin</td>
+                        <td class="unit">ขวด</td>
+                        <td class="old-stock" data-old="8">8</td>
+                        <td class="input-col"><input type="number" min="0" placeholder="0" oninput="calculateDiff(this)"></td>
+                    </tr>
+                    <tr>
+                        <td>Salbutamol Sulfate (100 mcg/dose) Metered Dose Inhaler</td>
+                        <td class="unit">กระป๋อง</td>
+                        <td class="old-stock" data-old="14">14</td>
+                        <td class="input-col"><input type="number" min="0" placeholder="0" oninput="calculateDiff(this)"></td>
+                    </tr>
+                    <tr>
+                        <td>Salmeterol + Fluticasone (25 mcg + 125 mcg/dose) Inhaler</td>
+                        <td class="unit">กระป๋อง</td>
+                        <td class="old-stock" data-old="6">6</td>
+                        <td class="input-col"><input type="number" min="0" placeholder="0" oninput="calculateDiff(this)"></td>
+                    </tr>
+                    <tr>
+                        <td>Salmeterol + Fluticasone (25 mcg + 250 mcg/dose) Inhaler</td>
+                        <td class="unit">กระป๋อง</td>
+                        <td class="old-stock" data-old="9">9</td>
+                        <td class="input-col"><input type="number" min="0" placeholder="0" oninput="calculateDiff(this)"></td>
+                    </tr>
+                    <tr>
+                        <td>Sodium Chloride 0.9% Irrigation Solution</td>
+                        <td class="unit">ขวด</td>
+                        <td class="old-stock" data-old="60">60</td>
+                        <td class="input-col"><input type="number" min="0" placeholder="0" oninput="calculateDiff(this)"></td>
+                    </tr>
+                    <tr>
+                        <td>Tiotropium Bromide Monohydrate 18 mcg Capsule</td>
+                        <td class="unit">แคปซูล</td>
+                        <td class="old-stock" data-old="120">120</td>
+                        <td class="input-col"><input type="number" min="0" placeholder="0" oninput="calculateDiff(this)"></td>
+                    </tr>
+                    <tr>
+                        <td>Triamcinolone Acetonide 0.1% Cream (100 g)</td>
+                        <td class="unit">หลอด</td>
+                        <td class="old-stock" data-old="15">15</td>
+                        <td class="input-col"><input type="number" min="0" placeholder="0" oninput="calculateDiff(this)"></td>
+                    </tr>
+                    <tr>
+                        <td>Triamcinolone Acetonide 0.1% Cream (15 g)</td>
+                        <td class="unit">หลอด</td>
+                        <td class="old-stock" data-old="22">22</td>
+                        <td class="input-col"><input type="number" min="0" placeholder="0" oninput="calculateDiff(this)"></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        <div class="section-action">
+            <button class="btn-success" onclick="handleSave('ยาคงคลัง', 'section-drug-supply')">บันทึกยอดเภสัชกรรม</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    function calculateDiff(input) {
+        const row = input.closest('tr');
+        const oldStockCell = row.querySelector('.old-stock');
+        const oldVal = parseInt(oldStockCell.textContent.trim()) || 0;
+        const newVal = parseInt(input.value);
+
+        let badge = input.parentElement.querySelector('.diff-badge');
+        if (!badge) {
+            badge = document.createElement('span');
+            badge.className = 'diff-badge';
+            input.parentElement.appendChild(badge);
+        }
+
+        if (isNaN(newVal)) {
+            badge.innerHTML = '';
+            return;
+        }
+
+        const diff = newVal - oldVal;
+        if (diff > 0) {
+            badge.innerHTML = `<span class="diff-up">▲ +${diff}</span>`;
+        } else if (diff < 0) {
+            badge.innerHTML = `<span class="diff-down">▼ ${diff}</span>`;
+        } else {
+            badge.innerHTML = `<span class="diff-same">= 0</span>`;
+        }
+    }
+
+    function handleSave(sectionName, sectionId) {
+        // ถามชื่อผู้ให้ข้อมูลก่อนบันทึก
+        const reporterName = prompt(`กรุณาระบุชื่อ-นามสกุล ผู้บันทึกข้อมูล "${sectionName}":`);
+        
+        if (!reporterName || reporterName.trim() === "") {
+            alert("ยกเลิกการบันทึก เนื่องจากไม่ได้ระบุชื่อผู้ให้ข้อมูล");
+            return;
+        }
+
+        // ดึงวันที่ปัจจุบัน (จำลองวันที่ 15 ก.ย. 2026 ตามระบบ)
+        const currentDate = "15 ก.ย. 2026"; 
+
+        // รวบรวมข้อมูลในส่วนนั้นๆ
+        const section = document.getElementById(sectionId);
+        const rows = section.querySelectorAll('tbody tr');
+        let dataToSave = [];
+
+        rows.forEach(row => {
+            const itemName = row.cells[0].textContent.trim();
+            const unit = row.cells[1].textContent.trim();
+            const oldStock = row.querySelector('.old-stock').textContent.trim();
+            const inputVal = row.querySelector('input[type="number"]').value;
+            const currentStock = inputVal !== "" ? inputVal : oldStock; // ถ้าไม่ได้กรอก ให้ใช้ยอดเดิม
+
+            dataToSave.push({
+                item: itemName,
+                unit: unit,
+                currentStock: currentStock
+            });
+        });
+
+        // จำลองการส่งข้อมูลไป Google Sheet (ขั้นต่อไปจะใช้ Google Apps Script รับค่าตรงนี้)
+        console.log("Data to Google Sheet:", {
+            date: currentDate,
+            reporter: reporterName.trim(),
+            category: sectionName,
+            items: dataToSave
+        });
+
+        alert(`บันทึกข้อมูลส่วน "${sectionName}" สำเร็จ!\nผู้บันทึก: ${reporterName.trim()}\nวันที่: ${currentDate}`);
+    }
+</script>
+
+</body>
+</html>

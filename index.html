@@ -135,7 +135,7 @@
             width: 180px;
         }
 
-        input[type="number"] {
+        input[type="number"], input[type="password"] {
             width: 100%;
             padding: 9px 14px;
             border: 1px solid var(--border-color);
@@ -148,11 +148,11 @@
             transition: all 0.2s ease;
         }
 
-        input[type="number"]:focus {
+        input[type="number"]:focus, input[type="password"]:focus {
             outline: none;
-            border-color: var(--primary-color);
+            border-color: var(--text-main);
             background-color: #ffffff;
-            box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.12);
+            box-shadow: 0 0 0 3px rgba(15, 23, 42, 0.08);
         }
 
         .diff-badge {
@@ -210,6 +210,109 @@
         .btn-success:hover {
             background-color: var(--success-hover);
         }
+
+        /* Modal Styles ตามแบบ */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(4px);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.2s ease;
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal-box {
+            background-color: #ffffff;
+            width: 100%;
+            max-width: 440px;
+            border-radius: 20px;
+            padding: 32px;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            transform: scale(0.95);
+            transition: transform 0.2s ease;
+        }
+
+        .modal-overlay.active .modal-box {
+            transform: scale(1);
+        }
+
+        .modal-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 8px;
+        }
+
+        .modal-icon {
+            width: 24px;
+            height: 24px;
+            color: var(--text-main);
+        }
+
+        .modal-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: var(--text-main);
+            margin: 0;
+        }
+
+        .modal-desc {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            margin: 0 0 24px 0;
+            font-weight: 300;
+        }
+
+        .modal-input {
+            margin-bottom: 24px;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 12px;
+        }
+
+        .modal-actions button {
+            flex: 1;
+            padding: 11px 16px;
+            font-size: 0.95rem;
+            border-radius: 10px;
+            cursor: pointer;
+        }
+
+        .btn-primary-modal {
+            background-color: #0f172a;
+            color: white;
+            border: none;
+            font-weight: 500;
+        }
+        .btn-primary-modal:hover {
+            background-color: #1e293b;
+        }
+
+        .btn-secondary-modal {
+            background-color: #ffffff;
+            color: var(--text-muted);
+            border: 1px solid var(--border-color);
+            font-weight: 500;
+        }
+        .btn-secondary-modal:hover {
+            background-color: #f8fafc;
+            color: var(--text-main);
+        }
     </style>
 </head>
 <body>
@@ -232,7 +335,7 @@
                     <tr>
                         <th>รายการ</th>
                         <th>หน่วย</th>
-                        <th style="text-align: center;">คงคลังเดิม (14 ก.ย. 2026)</th>
+                        <th style="text-align: center;">คงคลังเดิม (15 ก.ย. 2026)</th>
                         <th style="text-align: right;">คงคลังปัจจุบัน / ส่วนต่าง</th>
                     </tr>
                 </thead>
@@ -277,7 +380,7 @@
             </table>
         </div>
         <div class="section-action">
-            <button onclick="handleSave('พัสดุทางการแพทย์', 'section-medical-supply')">บันทึกยอดพัสดุฯ</button>
+            <button onclick="requestSave('พัสดุทางการแพทย์', 'section-medical-supply')">บันทึกยอดพัสดุฯ</button>
         </div>
     </div>
 
@@ -293,7 +396,7 @@
                     <tr>
                         <th>รายการ</th>
                         <th>หน่วย</th>
-                        <th style="text-align: center;">คงคลังเดิม (14 ก.ย. 2026)</th>
+                        <th style="text-align: center;">คงคลังเดิม (15 ก.ย. 2026)</th>
                         <th style="text-align: right;">คงคลังปัจจุบัน / ส่วนต่าง</th>
                     </tr>
                 </thead>
@@ -380,12 +483,39 @@
             </table>
         </div>
         <div class="section-action">
-            <button class="btn-success" onclick="handleSave('ยาคงคลัง', 'section-drug-supply')">บันทึกยอดเภสัชกรรม</button>
+            <button class="btn-success" onclick="requestSave('ยาคงคลัง', 'section-drug-supply')">บันทึกยอดเภสัชกรรม</button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal ยืนยันตัวตน (Password) -->
+<div class="modal-overlay" id="passwordModal">
+    <div class="modal-box">
+        <div class="modal-header">
+            <!-- ไอคอนกุญแจ SVG -->
+            <svg class="modal-icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+            </svg>
+            <h3 class="modal-title">ยืนยันตัวตนเข้าสู่ระบบ</h3>
+        </div>
+        <p class="modal-desc">กรุณาใส่รหัสผ่านเพื่อเข้าสู่ระบบบริหารจัดการ</p>
+        
+        <div class="modal-input">
+            <input type="password" id="authPassword" placeholder="รหัสผ่าน..." onkeypress="handlePasswordKeypress(event)">
+        </div>
+
+        <div class="modal-actions">
+            <button class="btn-primary-modal" onclick="verifyPassword()">เข้าสู่ระบบ</button>
+            <button class="btn-secondary-modal" onclick="closeModal()">กลับ Workspace</button>
         </div>
     </div>
 </div>
 
 <script>
+    let activeSectionName = "";
+    let activeSectionId = "";
+    const CORRECT_PASSWORD = "123"; // กำหนดรหัสผ่านทดสอบที่นี่
+
     function calculateDiff(input) {
         const row = input.closest('tr');
         const oldStockCell = row.querySelector('.old-stock');
@@ -414,20 +544,50 @@
         }
     }
 
-    function handleSave(sectionName, sectionId) {
-        // ถามชื่อผู้ให้ข้อมูลก่อนบันทึก
-        const reporterName = prompt(`กรุณาระบุชื่อ-นามสกุล ผู้บันทึกข้อมูล "${sectionName}":`);
+    // เมื่อกดปุ่มบันทึกของแต่ละส่วน ให้เปิด Modal รหัสผ่านขึ้นมาก่อน
+    function requestSave(sectionName, sectionId) {
+        activeSectionName = sectionName;
+        activeSectionId = sectionId;
+        
+        document.getElementById('authPassword').value = "";
+        document.getElementById('passwordModal').classList.add('active');
+        document.getElementById('authPassword').focus();
+    }
+
+    function closeModal() {
+        document.getElementById('passwordModal').classList.remove('active');
+    }
+
+    function handlePasswordKeypress(event) {
+        if (event.key === 'Enter') {
+            verifyPassword();
+        }
+    }
+
+    // ตรวจสอบรหัสผ่าน
+    function verifyPassword() {
+        const inputPassword = document.getElementById('authPassword').value;
+
+        if (inputPassword !== CORRECT_PASSWORD) {
+            alert("รหัสผ่านไม่ถูกต้อง กรุณาลองใหม่อีกครั้ง");
+            document.getElementById('authPassword').value = "";
+            document.getElementById('authPassword').focus();
+            return;
+        }
+
+        // ปิด Modal รหัสผ่าน
+        closeModal();
+
+        // หลังจากใส่รหัสผ่านถูกต้อง ให้ถามชื่อผู้ให้ข้อมูลต่อทันที
+        const reporterName = prompt(`รหัสผ่านถูกต้อง!\nกรุณาระบุชื่อ-นามสกุล ผู้บันทึกข้อมูล "${activeSectionName}":`);
         
         if (!reporterName || reporterName.trim() === "") {
             alert("ยกเลิกการบันทึก เนื่องจากไม่ได้ระบุชื่อผู้ให้ข้อมูล");
             return;
         }
 
-        // ดึงวันที่ปัจจุบัน (จำลองวันที่ 15 ก.ย. 2026 ตามระบบ)
-        const currentDate = "15 ก.ย. 2026"; 
-
-        // รวบรวมข้อมูลในส่วนนั้นๆ
-        const section = document.getElementById(sectionId);
+        const currentDate = "15 ก.ย. 2026";
+        const section = document.getElementById(activeSectionId);
         const rows = section.querySelectorAll('tbody tr');
         let dataToSave = [];
 
@@ -436,7 +596,7 @@
             const unit = row.cells[1].textContent.trim();
             const oldStock = row.querySelector('.old-stock').textContent.trim();
             const inputVal = row.querySelector('input[type="number"]').value;
-            const currentStock = inputVal !== "" ? inputVal : oldStock; // ถ้าไม่ได้กรอก ให้ใช้ยอดเดิม
+            const currentStock = inputVal !== "" ? inputVal : oldStock;
 
             dataToSave.push({
                 item: itemName,
@@ -445,15 +605,15 @@
             });
         });
 
-        // จำลองการส่งข้อมูลไป Google Sheet (ขั้นต่อไปจะใช้ Google Apps Script รับค่าตรงนี้)
+        // จำลองข้อมูลที่จะส่งไป Google Sheet
         console.log("Data to Google Sheet:", {
             date: currentDate,
             reporter: reporterName.trim(),
-            category: sectionName,
+            category: activeSectionName,
             items: dataToSave
         });
 
-        alert(`บันทึกข้อมูลส่วน "${sectionName}" สำเร็จ!\nผู้บันทึก: ${reporterName.trim()}\nวันที่: ${currentDate}`);
+        alert(`บันทึกข้อมูลส่วน "${activeSectionName}" สำเร็จ!\nผู้บันทึก: ${reporterName.trim()}\nวันที่: ${currentDate}`);
     }
 </script>
 

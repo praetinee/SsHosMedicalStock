@@ -35,11 +35,47 @@
         .container {
             max-width: 1050px;
             margin: 0 auto;
+            position: relative;
+        }
+
+        /* ปุ่ม Workspace มุมบนขวาตามแบบ */
+        .workspace-btn {
+            position: absolute;
+            top: 0;
+            right: 0;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background-color: #ffffff;
+            color: var(--text-main);
+            border: 1px solid var(--border-color);
+            padding: 8px 16px;
+            font-size: 0.9rem;
+            font-family: 'Prompt', sans-serif;
+            font-weight: 500;
+            border-radius: 10px;
+            cursor: pointer;
+            box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+            transition: all 0.2s ease;
+            text-decoration: none;
+            z-index: 10;
+        }
+
+        .workspace-btn:hover {
+            background-color: #f8fafc;
+            border-color: #cbd5e1;
+        }
+
+        .workspace-btn svg {
+            width: 18px;
+            height: 18px;
+            color: var(--text-muted);
         }
 
         header {
             text-align: center;
             margin-bottom: 35px;
+            padding-top: 10px;
         }
 
         header h1 {
@@ -237,7 +273,7 @@
         .modal-box {
             background-color: #ffffff;
             width: 100%;
-            max-width: 440px;
+            max-width: 420px;
             border-radius: 20px;
             padding: 32px;
             box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
@@ -277,16 +313,11 @@
         }
 
         .modal-input {
-            margin-bottom: 24px;
-        }
-
-        .modal-actions {
-            display: flex;
-            gap: 12px;
+            margin-bottom: 20px;
         }
 
         .modal-actions button {
-            flex: 1;
+            width: 100%;
             padding: 11px 16px;
             font-size: 0.95rem;
             border-radius: 10px;
@@ -303,22 +334,19 @@
         .btn-primary-modal:hover {
             background-color: #1e293b;
         }
-
-        .btn-secondary-modal {
-            background-color: #ffffff;
-            color: var(--text-muted);
-            border: 1px solid var(--border-color);
-            font-weight: 500;
-        }
-        .btn-secondary-modal:hover {
-            background-color: #f8fafc;
-            color: var(--text-main);
-        }
     </style>
 </head>
 <body>
 
 <div class="container">
+    <!-- ปุ่ม Workspace มุมบนขวา -->
+    <a href="#" class="workspace-btn" onclick="goToWorkspace(event)">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
+        </svg>
+        Workspace
+    </a>
+
     <header>
         <h1>ระบบบันทึกเวชภัณฑ์และยาคงคลัง</h1>
         <p>แยกบันทึกข้อมูลและตรวจสอบยอดคงเหลือประจำวัน</p>
@@ -490,8 +518,8 @@
 </div>
 
 <!-- Modal ยืนยันตัวตน (Password) -->
-<div class="modal-overlay" id="passwordModal">
-    <div class="modal-box">
+<div class="modal-overlay" id="passwordModal" onclick="handleOutsideClick(event)">
+    <div class="modal-box" onclick="event.stopPropagation()">
         <div class="modal-header">
             <svg class="modal-icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
@@ -506,7 +534,6 @@
 
         <div class="modal-actions">
             <button class="btn-primary-modal" onclick="verifyPassword()">เข้าสู่ระบบ</button>
-            <button class="btn-secondary-modal" onclick="closeModal()">กลับ Workspace</button>
         </div>
     </div>
 </div>
@@ -557,6 +584,11 @@
         document.getElementById('passwordModal').classList.remove('active');
     }
 
+    // ฟังก์ชันคลิกพื้นที่ว่างรอบ Pop-up เพื่อปิดโดยข้อมูลไม่หาย
+    function handleOutsideClick(event) {
+        closeModal();
+    }
+
     function handlePasswordKeypress(event) {
         if (event.key === 'Enter') {
             verifyPassword();
@@ -575,43 +607,38 @@
 
         closeModal();
 
-        // หน่วงเวลาเล็กน้อยเพื่อให้ Modal ปิดสนิทก่อนเด้ง Prompt ถามชื่อ
-        setTimeout(() => {
-            const reporterName = prompt(`รหัสผ่านถูกต้อง!\nกรุณาระบุชื่อ-นามสกุล ผู้บันทึกข้อมูล "${activeSectionName}":`);
-            
-            if (!reporterName || reporterName.trim() === "") {
-                alert("ยกเลิกการบันทึก เนื่องจากไม่ได้ระบุชื่อผู้ให้ข้อมูล");
-                return;
-            }
+        // บันทึกสำเร็จทันทีโดยไม่ถามชื่อและไม่รีเฟรชหน้า
+        const currentDate = "15 ก.ย. 2026";
+        const section = document.getElementById(activeSectionId);
+        const rows = section.querySelectorAll('tbody tr');
+        let dataToSave = [];
 
-            const currentDate = "15 ก.ย. 2026";
-            const section = document.getElementById(activeSectionId);
-            const rows = section.querySelectorAll('tbody tr');
-            let dataToSave = [];
+        rows.forEach(row => {
+            const itemName = row.cells[0].textContent.trim();
+            const unit = row.cells[1].textContent.trim();
+            const oldStock = row.querySelector('.old-stock').textContent.trim();
+            const inputVal = row.querySelector('input[type="number"]').value;
+            const currentStock = inputVal !== "" ? inputVal : oldStock;
 
-            rows.forEach(row => {
-                const itemName = row.cells[0].textContent.trim();
-                const unit = row.cells[1].textContent.trim();
-                const oldStock = row.querySelector('.old-stock').textContent.trim();
-                const inputVal = row.querySelector('input[type="number"]').value;
-                const currentStock = inputVal !== "" ? inputVal : oldStock;
-
-                dataToSave.push({
-                    item: itemName,
-                    unit: unit,
-                    currentStock: currentStock
-                });
+            dataToSave.push({
+                item: itemName,
+                unit: unit,
+                currentStock: currentStock
             });
+        });
 
-            console.log("Data to Google Sheet:", {
-                date: currentDate,
-                reporter: reporterName.trim(),
-                category: activeSectionName,
-                items: dataToSave
-            });
+        console.log("Data to Google Sheet:", {
+            date: currentDate,
+            category: activeSectionName,
+            items: dataToSave
+        });
 
-            alert(`บันทึกข้อมูลส่วน "${activeSectionName}" สำเร็จ!\nผู้บันทึก: ${reporterName.trim()}\nวันที่: ${currentDate}`);
-        }, 200);
+        alert(`บันทึกข้อมูลส่วน "${activeSectionName}" เรียบร้อย!\nวันที่: ${currentDate}`);
+    }
+
+    function goToWorkspace(event) {
+        event.preventDefault();
+        alert('ไปยังหน้า Workspace (เชื่อมต่อลิงก์ภายหลัง)');
     }
 </script>
 

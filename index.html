@@ -532,28 +532,38 @@
     </div>
 </div>
 
-<!-- Modal ยืนยันตัวตน (Password) -->
-<div class="modal-overlay" id="passwordModal" onclick="handleOutsideClick(event)">
-    <div class="modal-box" onclick="event.stopPropagation()">
+<!-- Modal แจ้งเตือนเมื่อโหลดหน้า -->
+<div class="modal-overlay" id="infoModal">
+    <div class="modal-box">
         <div class="modal-header">
-            <svg class="modal-icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+            <!-- ไอคอน Info -->
+            <svg class="modal-icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="color: #0ea5e9;">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
             </svg>
-            <h3 class="modal-title">ยืนยันตัวตนเข้าสู่ระบบ</h3>
+            <h3 class="modal-title">ประกาศแจ้งเตือน</h3>
         </div>
-        <p class="modal-desc">กรุณาใส่รหัสผ่านเพื่อบันทึกข้อมูล</p>
-        
-        <div class="modal-input">
-            <input type="password" id="authPassword" placeholder="รหัสผ่าน..." onkeypress="handlePasswordKeypress(event)">
+        <div class="modal-desc" style="margin-bottom: 24px; color: var(--text-main); font-weight: 400; line-height: 1.6; font-size: 0.95rem;">
+            1. ขอความร่วมมือ ลงข้อมูลทุกวันก่อน เวลา 16.00 น.<br>
+            2. การลงข้อมูล MASK ให้ลงเป็น MASK ที่พร้อมที่จะให้แจกแก่ประชาชน (ไม่รวมที่ใช้ปกติ)<br>
+            3. ยาและเวชภัณฑ์ให้ลงคงคลังจริง<br>
+            4. ทาง Logistic เขต จะติดตามและรายงาน PHEOC เขต
         </div>
-
         <div class="modal-actions">
-            <button class="btn-primary-modal" onclick="verifyPassword()">เข้าสู่ระบบ</button>
+            <button class="btn-primary-modal" onclick="closeInfoModal()">รับทราบ</button>
         </div>
     </div>
 </div>
 
 <script>
+    // แสดง Popup แจ้งเตือนเมื่อโหลดหน้าเว็บ
+    window.onload = function() {
+        document.getElementById('infoModal').classList.add('active');
+    };
+
+    // ฟังก์ชันปิด Popup แจ้งเตือน
+    function closeInfoModal() {
+        document.getElementById('infoModal').classList.remove('active');
+    }
     let activeSectionName = "";
     let activeSectionId = "";
     const CORRECT_PASSWORD = "11130"; // รหัสผ่านทดสอบตั้งไว้เป็น 11130

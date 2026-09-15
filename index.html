@@ -631,33 +631,51 @@
 
         closeModal();
 
-        // บันทึกสำเร็จทันทีโดยไม่รีเฟรชหน้า
-        const currentDate = "15 ก.ย. 2026";
+        // เอาวันที่และเวลาปัจจุบันของจริง
+        const now = new Date();
+        const currentDate = now.toLocaleDateString('th-TH') + " " + now.toLocaleTimeString('th-TH');
+
         const section = document.getElementById(activeSectionId);
         const rows = section.querySelectorAll('tbody tr');
-        let dataToSave = [];
+        let itemsData = {}; // เปลี่ยนจาก Array เป็น Object เพื่อระบุชื่อ Key ได้
 
         rows.forEach(row => {
             const itemName = row.cells[0].textContent.trim();
-            const unit = row.cells[1].textContent.trim();
             const oldStock = row.querySelector('.old-stock').textContent.trim();
             const inputVal = row.querySelector('input[type="number"]').value;
-            const currentStock = inputVal !== "" ? inputVal : oldStock;
-
-            dataToSave.push({
-                item: itemName,
-                unit: unit,
-                currentStock: currentStock
-            });
+            // ถ้ากรอกค่าใหม่ใช้ค่าใหม่ ถ้าเว้นว่างให้ใช้ค่ายอดเดิม
+            itemsData[itemName] = inputVal !== "" ? inputVal : oldStock;
         });
 
-        console.log("Data to Google Sheet:", {
+        const payload = {
             date: currentDate,
             category: activeSectionName,
-            items: dataToSave
-        });
+            items: itemsData
+        };
 
-        alert(`บันทึกข้อมูลส่วน "${activeSectionName}" เรียบร้อย!\nวันที่: ${currentDate}`);
+        // เปลี่ยนปุ่มเป็นกำลังบันทึก
+        const originalBtnText = document.querySelector(`#${activeSectionId} button`).innerText;
+        document.querySelector(`#${activeSectionId} button`).innerText = "กำลังบันทึก...";
+        
+        // ******* นำ URL Web App ที่ได้จาก Google Apps Script มาวางแทนที่ตรงนี้ *******
+        const scriptURL = 'https://script.google.com/macros/s/AKfycbxyS6cQQY5sMXOjk6OsmSaQV-YKw_ExoNHk7kxgsHyA0KbUY1Ma514dmWfLOtyRWN-kHw/exec';
+
+        fetch(scriptURL, {
+            method: 'POST',
+            body: JSON.stringify(payload)
+        })
+        .then(response => response.text())
+        .then(data => {
+            document.querySelector(`#${activeSectionId} button`).innerText = originalBtnText;
+            alert(`บันทึกข้อมูลส่วน "${activeSectionName}" ลง Google Sheet เรียบร้อย!\nวันที่: ${currentDate}`);
+            // ล้างค่าฟอร์มหลังบันทึกเสร็จ
+            rows.forEach(row => row.querySelector('input[type="number"]').value = "");
+        })
+        .catch(error => {
+            document.querySelector(`#${activeSectionId} button`).innerText = originalBtnText;
+            alert("เกิดข้อผิดพลาดในการบันทึก กรุณาลองใหม่อีกครั้ง");
+            console.error('Error!', error.message);
+        });
     }
 
     function goToWorkspace(event) {

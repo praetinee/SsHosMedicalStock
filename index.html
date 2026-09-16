@@ -575,6 +575,18 @@
 </div>
 
 <script>
+    // ตัวแปรเช็กสถานะการบันทึกข้อมูล
+    let isSaving = false;
+
+    // ดักจับการปิด/รีเฟรชหน้าต่าง ถ้ายังบันทึกไม่เสร็จจะขึ้นเตือนและห้ามปิด
+    window.addEventListener('beforeunload', function (e) {
+        if (isSaving) {
+            e.preventDefault();
+            e.returnValue = 'ระบบกำลังบันทึกข้อมูลลง Google Sheet กรุณารอสักครู่...';
+            return e.returnValue;
+        }
+    });
+
     // ดึงข้อมูลสต๊อกล่าสุดจาก Google Sheet มาแสดง
     async function loadOldStock() {
         const url = 'https://docs.google.com/spreadsheets/d/1REIjuDGCutGGrQdVVtSNaVNvvHu4VsGsw9KNTd2-Das/gviz/tq?tqx=out:json&sheet=คงคลัง API';
@@ -584,35 +596,64 @@
             const jsonString = text.substring(text.indexOf('{'), text.lastIndexOf('}') + 1);
             const data = JSON.parse(jsonString);
             
-            if (data.table.rows.length === 0) return; 
+            const totalRows = data.table.rows.length;
+            if (totalRows === 0) return; 
 
             const cols = data.table.cols.map(c => c.label ? c.label.trim() : "");
-            const lastRow = data.table.rows[data.table.rows.length - 1].c;
+            
+            // แถวล่าสุด (แถวปัจจุบันในชีต)
+            const lastRow = data.table.rows[totalRows - 1].c;
+            // แถวก่อนหน้า (ถ้ามีอย่างน้อย 2 แถว เพื่อใช้เปรียบเทียบหาผลต่าง)
+            const prevRow = totalRows >= 2 ? data.table.rows[totalRows - 2].c : null;
 
-            // ดึงวันที่จากคอลัมน์ A (index 0) มาแสดงที่หัวตาราง
+            // 1. ดึงวันที่จากคอลัมน์ A (index 0) มาแสดงที่หัวตาราง
             let lastDate = "-";
-            if (lastRow[0] && lastRow[0].v) {
+            if (lastRow[0] && (lastRow[0].f || lastRow[0].v)) {
                 lastDate = lastRow[0].f || lastRow[0].v; 
             }
             document.querySelectorAll('.stock-date-header').forEach(th => {
                 th.textContent = `คงคลังเดิม (${lastDate})`;
             });
 
+            // 2. จัดเตรียมข้อมูลล่าสุด และคำนวณส่วนต่างประวัติ
             let latestStock = {};
+            let initialDiffBadge = {};
+
             for (let i = 0; i < cols.length; i++) {
-                if (cols[i] && lastRow[i] && lastRow[i].v !== null) {
-                    latestStock[cols[i]] = lastRow[i].v;
+                const colName = cols[i];
+                if (!colName || !lastRow[i] || lastRow[i].v === null) continue;
+
+                const currentVal = parseInt(lastRow[i].v);
+                latestStock[colName] = currentVal;
+
+                // ตรวจสอบว่ามีแถวก่อนหน้าให้เปรียบเทียบหรือไม่
+                if (prevRow && prevRow[i] && prevRow[i].v !== null) {
+                    const prevVal = parseInt(prevRow[i].v);
+                    const diff = currentVal - prevVal;
+
+                    if (diff > 0) {
+                        initialDiffBadge[colName] = `<span class="diff-up">▲ +${diff}</span>`;
+                    } else if (diff < 0) {
+                        initialDiffBadge[colName] = `<span class="diff-down">▼ ${diff}</span>`;
+                    } else {
+                        initialDiffBadge[colName] = `<span class="diff-same">= 0</span>`;
+                    }
+                } else {
+                    initialDiffBadge[colName] = ''; // ไม่มีตัวเปรียบเทียบ ไม่ต้องแสดงสัญลักษณ์
                 }
             }
 
-            // นำยอดล่าสุดไปหยอดลงในตาราง พร้อมใส่ tag เปล่าๆ รอรับสัญลักษณ์ส่วนต่าง
+            // 3. นำยอดล่าสุดและสัญลักษณ์ไปใส่ในตาราง
             const allRows = document.querySelectorAll('tbody tr');
             allRows.forEach(row => {
                 const itemName = row.cells[0].textContent.trim();
                 if (latestStock[itemName] !== undefined) {
                     const oldCell = row.querySelector('.old-stock');
-                    oldCell.setAttribute('data-val', latestStock[itemName]); // เก็บค่าตัวเลขเพียวๆ ไว้
-                    oldCell.innerHTML = `${latestStock[itemName]} <span class="diff-badge"></span>`;
+                    const badgeHtml = initialDiffBadge[itemName] || '';
+                    
+                    oldCell.setAttribute('data-val', latestStock[itemName]);
+                    oldCell.setAttribute('data-initial-badge', badgeHtml); // เก็บสัญลักษณ์ตั้งต้นไว้
+                    oldCell.innerHTML = `${latestStock[itemName]} <span class="diff-badge">${badgeHtml}</span>`;
                 }
             });
         } catch (error) {
@@ -623,7 +664,7 @@
     // แสดง Popup แจ้งเตือนเมื่อโหลดหน้าเว็บ
     window.onload = function() {
         document.getElementById('infoModal').classList.add('active');
-        loadOldStock(); // เรียกดึงข้อมูลทันทีที่โหลดหน้าเว็บเสร็จ
+        loadOldStock(); 
     };
 
     function closeInfoModal() {
@@ -634,11 +675,11 @@
     let activeSectionId = "";
     const CORRECT_PASSWORD = "11130"; 
 
+    // คำนวณส่วนต่างเมื่อผู้ใช้กรอกตัวเลขใหม่ในช่อง Input
     function calculateDiff(input) {
         const row = input.closest('tr');
         const oldStockCell = row.querySelector('.old-stock');
         
-        // อ่านค่าคงคลังเดิมเพียวๆ จาก data-val (ป้องกันการดึงสัญลักษณ์มาคำนวณ)
         let oldVal = 0;
         if (oldStockCell.hasAttribute('data-val')) {
             oldVal = parseInt(oldStockCell.getAttribute('data-val')) || 0;
@@ -651,12 +692,14 @@
         const newVal = parseInt(input.value);
         let displayOldVal = oldStockCell.hasAttribute('data-val') ? oldStockCell.getAttribute('data-val') : "-";
 
-        // ถ้ายกเลิกการพิมพ์ตัวเลข ให้ซ่อนสัญลักษณ์
+        // หากลบช่องกรอกจนว่าง ให้คืนค่าสัญลักษณ์ประวัติตั้งต้นกลับมา
         if (isNaN(newVal)) {
-            oldStockCell.innerHTML = `${displayOldVal} <span class="diff-badge"></span>`;
+            const initialBadge = oldStockCell.getAttribute('data-initial-badge') || '';
+            oldStockCell.innerHTML = `${displayOldVal} <span class="diff-badge">${initialBadge}</span>`;
             return;
         }
 
+        // คำนวณส่วนต่างเทียบกับยอดเดิม
         const diff = newVal - oldVal;
         let diffHtml = '';
         if (diff > 0) {
@@ -667,7 +710,6 @@
             diffHtml = `<span class="diff-same">= 0</span>`;
         }
         
-        // แสดงตัวเลขเดิม คู่กับสัญลักษณ์ส่วนต่างที่คอลัมน์คงคลังเดิม
         oldStockCell.innerHTML = `${displayOldVal} <span class="diff-badge">${diffHtml}</span>`;
     }
 
@@ -706,7 +748,6 @@
 
         closeModal();
 
-        // บังคับฟอร์แมตวันที่ให้เป็น DD/MM/YYYY
         const now = new Date();
         const day = String(now.getDate()).padStart(2, '0');
         const month = String(now.getMonth() + 1).padStart(2, '0');
@@ -722,7 +763,6 @@
             const itemName = row.cells[0].textContent.trim();
             const oldCell = row.querySelector('.old-stock');
             
-            // ดึงค่าคงคลังเดิมที่ถูกต้อง
             let oldStock = 0;
             if (oldCell.hasAttribute('data-val')) {
                 oldStock = parseInt(oldCell.getAttribute('data-val')) || 0;
@@ -732,8 +772,6 @@
             }
 
             const inputVal = row.querySelector('input[type="number"]').value;
-            
-            // ถ้ากรอกค่าใหม่ส่งค่าใหม่ ถ้าเว้นว่างให้ส่งค่ายอดเดิมไปแทน
             itemsData[itemName] = inputVal !== "" ? parseInt(inputVal) : oldStock;
         });
 
@@ -743,9 +781,14 @@
             items: itemsData
         };
 
-        const originalBtnText = document.querySelector(`#${activeSectionId} button`).innerText;
-        document.querySelector(`#${activeSectionId} button`).innerText = "กำลังบันทึก...";
-        
+        const targetBtn = document.querySelector(`#${activeSectionId} button`);
+        const originalBtnText = targetBtn.innerText;
+        targetBtn.innerText = "กำลังบันทึก...";
+        targetBtn.disabled = true;
+
+        // เริ่มต้นล็อกไม่ให้ปิดหน้าต่าง
+        isSaving = true;
+
         const scriptURL = 'https://script.google.com/macros/s/AKfycbxyS6cQQY5sMXOjk6OsmSaQV-YKw_ExoNHk7kxgsHyA0KbUY1Ma514dmWfLOtyRWN-kHw/exec';
 
         fetch(scriptURL, {
@@ -754,17 +797,25 @@
         })
         .then(response => response.text())
         .then(data => {
-            document.querySelector(`#${activeSectionId} button`).innerText = originalBtnText;
+            // ปลดล็อกให้ปิดหน้าต่างได้เมื่อบันทึกสำเร็จ
+            isSaving = false;
+            targetBtn.disabled = false;
+            targetBtn.innerText = originalBtnText;
+
             alert(`บันทึกข้อมูลส่วน "${activeSectionName}" ลง Google Sheet เรียบร้อย!\nวันที่: ${currentDate.split(' ')[0]}`);
             
-            // ล้างค่าฟอร์มและรีเฟรชยอดคงเหลือใหม่
+            // เคลียร์ค่าฟอร์มและโหลดข้อมูลสต๊อกล่าสุดใหม่
             rows.forEach(row => {
                 row.querySelector('input[type="number"]').value = "";
             });
             loadOldStock(); 
         })
         .catch(error => {
-            document.querySelector(`#${activeSectionId} button`).innerText = originalBtnText;
+            // ปลดล็อกกรณีเกิดข้อผิดพลาด
+            isSaving = false;
+            targetBtn.disabled = false;
+            targetBtn.innerText = originalBtnText;
+
             alert("เกิดข้อผิดพลาดในการบันทึก กรุณาลองใหม่อีกครั้ง");
             console.error('Error!', error);
         });

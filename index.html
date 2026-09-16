@@ -575,28 +575,23 @@
 </div>
 
 <script>
-    // แสดง Popup แจ้งเตือนเมื่อโหลดหน้าเว็บ
-    // โหลดข้อมูลสต๊อกล่าสุดจาก Google Sheet มาแสดงแทนเครื่องหมาย -
+    // ดึงข้อมูลสต๊อกล่าสุดจาก Google Sheet มาแสดง
     async function loadOldStock() {
-        // ใช้ API ดึงข้อมูลแบบ JSON ของ Google Sheet ที่แชร์สาธารณะไว้
         const url = 'https://docs.google.com/spreadsheets/d/1REIjuDGCutGGrQdVVtSNaVNvvHu4VsGsw9KNTd2-Das/gviz/tq?tqx=out:json&sheet=คงคลัง API';
         try {
             const response = await fetch(url);
             const text = await response.text();
-            // ตัดคำสั่งขยะที่ Google คลุมไว้ออกเพื่อให้เหลือแค่ JSON
             const jsonString = text.substring(text.indexOf('{'), text.lastIndexOf('}') + 1);
             const data = JSON.parse(jsonString);
             
             if (data.table.rows.length === 0) return; 
 
-            // ประกาศตัวแปรเพื่อดึงข้อมูลแถวล่าสุด (บรรทัดนี้ที่หายไปในโค้ดของคุณ)
             const cols = data.table.cols.map(c => c.label ? c.label.trim() : "");
             const lastRow = data.table.rows[data.table.rows.length - 1].c;
 
             // ดึงวันที่จากคอลัมน์ A (index 0) มาแสดงที่หัวตาราง
             let lastDate = "-";
             if (lastRow[0] && lastRow[0].v) {
-                // ใช้ .f เผื่อกรณีชีตจัดรูปแบบวันที่ไว้ ถ้าไม่มีให้ใช้ .v
                 lastDate = lastRow[0].f || lastRow[0].v; 
             }
             document.querySelectorAll('.stock-date-header').forEach(th => {
@@ -610,12 +605,14 @@
                 }
             }
 
-            // นำยอดล่าสุดไปหยอดลงในตาราง
+            // นำยอดล่าสุดไปหยอดลงในตาราง พร้อมใส่ tag เปล่าๆ รอรับสัญลักษณ์ส่วนต่าง
             const allRows = document.querySelectorAll('tbody tr');
             allRows.forEach(row => {
                 const itemName = row.cells[0].textContent.trim();
                 if (latestStock[itemName] !== undefined) {
-                    row.querySelector('.old-stock').textContent = latestStock[itemName];
+                    const oldCell = row.querySelector('.old-stock');
+                    oldCell.setAttribute('data-val', latestStock[itemName]); // เก็บค่าตัวเลขเพียวๆ ไว้
+                    oldCell.innerHTML = `${latestStock[itemName]} <span class="diff-badge"></span>`;
                 }
             });
         } catch (error) {
@@ -623,6 +620,7 @@
         }
     }
 
+    // แสดง Popup แจ้งเตือนเมื่อโหลดหน้าเว็บ
     window.onload = function() {
         document.getElementById('infoModal').classList.add('active');
         loadOldStock(); // เรียกดึงข้อมูลทันทีที่โหลดหน้าเว็บเสร็จ
@@ -639,29 +637,38 @@
     function calculateDiff(input) {
         const row = input.closest('tr');
         const oldStockCell = row.querySelector('.old-stock');
-        const oldVal = parseInt(oldStockCell.textContent.trim()) || 0;
-        const newVal = parseInt(input.value);
-
-        let badge = input.parentElement.querySelector('.diff-badge');
-        if (!badge) {
-            badge = document.createElement('span');
-            badge.className = 'diff-badge';
-            input.parentElement.appendChild(badge);
+        
+        // อ่านค่าคงคลังเดิมเพียวๆ จาก data-val (ป้องกันการดึงสัญลักษณ์มาคำนวณ)
+        let oldVal = 0;
+        if (oldStockCell.hasAttribute('data-val')) {
+            oldVal = parseInt(oldStockCell.getAttribute('data-val')) || 0;
+        } else {
+            const text = oldStockCell.textContent.split(' ')[0];
+            oldVal = text === "-" ? 0 : parseInt(text) || 0;
+            oldStockCell.setAttribute('data-val', oldVal);
         }
 
+        const newVal = parseInt(input.value);
+        let displayOldVal = oldStockCell.hasAttribute('data-val') ? oldStockCell.getAttribute('data-val') : "-";
+
+        // ถ้ายกเลิกการพิมพ์ตัวเลข ให้ซ่อนสัญลักษณ์
         if (isNaN(newVal)) {
-            badge.innerHTML = '';
+            oldStockCell.innerHTML = `${displayOldVal} <span class="diff-badge"></span>`;
             return;
         }
 
         const diff = newVal - oldVal;
+        let diffHtml = '';
         if (diff > 0) {
-            badge.innerHTML = `<span class="diff-up">▲ +${diff}</span>`;
+            diffHtml = `<span class="diff-up">▲ +${diff}</span>`;
         } else if (diff < 0) {
-            badge.innerHTML = `<span class="diff-down">▼ ${diff}</span>`;
+            diffHtml = `<span class="diff-down">▼ ${diff}</span>`;
         } else {
-            badge.innerHTML = `<span class="diff-same">= 0</span>`;
+            diffHtml = `<span class="diff-same">= 0</span>`;
         }
+        
+        // แสดงตัวเลขเดิม คู่กับสัญลักษณ์ส่วนต่างที่คอลัมน์คงคลังเดิม
+        oldStockCell.innerHTML = `${displayOldVal} <span class="diff-badge">${diffHtml}</span>`;
     }
 
     function requestSave(sectionName, sectionId) {
@@ -699,7 +706,7 @@
 
         closeModal();
 
-        // บังคับฟอร์แมตวันที่ให้เป็น DD/MM/YYYY เพื่อให้ App Script ตรวจสอบง่าย
+        // บังคับฟอร์แมตวันที่ให้เป็น DD/MM/YYYY
         const now = new Date();
         const day = String(now.getDate()).padStart(2, '0');
         const month = String(now.getMonth() + 1).padStart(2, '0');
@@ -713,8 +720,17 @@
 
         rows.forEach(row => {
             const itemName = row.cells[0].textContent.trim();
-            const oldStockText = row.querySelector('.old-stock').textContent.trim();
-            const oldStock = oldStockText === "-" ? 0 : parseInt(oldStockText);
+            const oldCell = row.querySelector('.old-stock');
+            
+            // ดึงค่าคงคลังเดิมที่ถูกต้อง
+            let oldStock = 0;
+            if (oldCell.hasAttribute('data-val')) {
+                oldStock = parseInt(oldCell.getAttribute('data-val')) || 0;
+            } else {
+                const text = oldCell.textContent.split(' ')[0];
+                oldStock = text === "-" ? 0 : parseInt(text) || 0;
+            }
+
             const inputVal = row.querySelector('input[type="number"]').value;
             
             // ถ้ากรอกค่าใหม่ส่งค่าใหม่ ถ้าเว้นว่างให้ส่งค่ายอดเดิมไปแทน
@@ -744,7 +760,6 @@
             // ล้างค่าฟอร์มและรีเฟรชยอดคงเหลือใหม่
             rows.forEach(row => {
                 row.querySelector('input[type="number"]').value = "";
-                row.querySelector('.diff-badge').innerHTML = "";
             });
             loadOldStock(); 
         })

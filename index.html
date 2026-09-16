@@ -589,6 +589,10 @@
             
             if (data.table.rows.length === 0) return; 
 
+            // ประกาศตัวแปรเพื่อดึงข้อมูลแถวล่าสุด (บรรทัดนี้ที่หายไปในโค้ดของคุณ)
+            const cols = data.table.cols.map(c => c.label ? c.label.trim() : "");
+            const lastRow = data.table.rows[data.table.rows.length - 1].c;
+
             // ดึงวันที่จากคอลัมน์ A (index 0) มาแสดงที่หัวตาราง
             let lastDate = "-";
             if (lastRow[0] && lastRow[0].v) {
